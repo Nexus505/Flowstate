@@ -1,0 +1,529 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Fira+Code:wght@400;500;600&display=swap');
+@import "tw-animate-css";
+@import "@fontsource-variable/geist";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Houdini: animatable angle property ─────────────── */
+@property --shine-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes shine-spin {
+  to { --shine-angle: 360deg; }
+}
+
+@layer base {
+  :root {
+    /* Core palette */
+    --bg-base:      #080b12;
+    --bg-surface:   #0d1120;
+    --bg-elevated:  #111828;
+
+    /* Accent palette — inspired by the vivid gradient reference */
+    --violet:   #8b5cf6;
+    --indigo:   #6366f1;
+    --cyan:     #22d3ee;
+    --sky:      #38bdf8;
+    --emerald:  #34d399;
+    --amber:    #fbbf24;
+    --rose:     #fb7185;
+    --pink:     #e879f9;
+
+    /* Legacy aliases */
+    --primary: var(--cyan);
+    --secondary: #64748b;
+    --border-subtle: rgba(255,255,255,0.07);
+    --border-glow:   rgba(255,255,255,0.12);
+  }
+
+  html {
+    font-family: 'Inter', 'Geist Variable', sans-serif;
+    font-size: 16px;
+    background: var(--bg-base);
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--bg-base);
+    overflow-x: hidden;
+  }
+
+  * {
+    border-color: var(--border-subtle);
+  }
+}
+
+@layer components {
+  /* ─── Premium glass card ─────────────────────────────── */
+  .glass-card {
+    position: relative;
+    backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid transparent;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.4s ease, transform 0.12s ease;
+    cursor: default;
+    will-change: transform;
+    transform-style: preserve-3d;
+    background:
+      rgba(13, 17, 32, 0.75) padding-box,
+      conic-gradient(from var(--shine-angle),
+        rgba(255,255,255,0.04) 0deg,
+        rgba(34,211,238,0.45) 60deg,
+        rgba(139,92,246,0.5) 130deg,
+        rgba(251,113,133,0.4) 200deg,
+        rgba(251,191,36,0.35) 270deg,
+        rgba(34,211,238,0.45) 330deg,
+        rgba(255,255,255,0.04) 360deg
+      ) border-box;
+    animation: shine-spin 8s linear infinite;
+  }
+
+  /* Spotlight + colour orb — follows cursor on hover */
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        260px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+        rgba(255,255,255,0.035) 0%,
+        transparent 65%
+      ),
+      var(--card-gradient, radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.09) 0%, transparent 65%));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glass-card:hover::before {
+    opacity: 1;
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 14px 32px rgba(0,0,0,0.35);
+    animation: shine-spin 3s linear infinite;
+  }
+
+  .glass-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Card colour variants */
+  .card-violet {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.10) 0%, rgba(99,102,241,0.04) 50%, transparent 70%);
+    --card-border-hover: rgba(139,92,246,0.3);
+  }
+  .card-cyan {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(34,211,238,0.09) 0%, rgba(56,189,248,0.03) 50%, transparent 70%);
+    --card-border-hover: rgba(34,211,238,0.28);
+  }
+  .card-emerald {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(52,211,153,0.09) 0%, rgba(16,185,129,0.03) 50%, transparent 70%);
+    --card-border-hover: rgba(52,211,153,0.28);
+  }
+  .card-amber {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(251,191,36,0.09) 0%, rgba(245,158,11,0.03) 50%, transparent 70%);
+    --card-border-hover: rgba(251,191,36,0.28);
+  }
+  .card-rose {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(251,113,133,0.09) 0%, rgba(244,63,94,0.03) 50%, transparent 70%);
+    --card-border-hover: rgba(251,113,133,0.3);
+  }
+  .card-pink {
+    --card-gradient: radial-gradient(ellipse at 80% 20%, rgba(232,121,249,0.09) 0%, rgba(168,85,247,0.04) 50%, transparent 70%);
+    --card-border-hover: rgba(232,121,249,0.3);
+  }
+
+  /* Legacy alias — keeps old code working */
+  .liquid-glass {
+    @apply glass-card;
+  }
+
+  /* ─── Buttons ────────────────────────────────────────── */
+  .btn-magnetic {
+    @apply relative overflow-hidden transition-all duration-300 inline-flex items-center justify-center font-medium cursor-pointer;
+    color: #22d3ee;
+    border-radius: 0.625rem;
+    background: transparent;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.3s ease;
+  }
+  /* Shimmer sweep layer */
+  .btn-magnetic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(34,211,238,0.15) 50%,
+      transparent 65%
+    );
+    transform: translateX(-120%);
+    transition: transform 0s;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .btn-magnetic:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 28px rgba(34,211,238,0.18), 0 4px 12px rgba(139,92,246,0.12);
+  }
+  .btn-magnetic:hover::after {
+    transform: translateX(120%);
+    transition: transform 0.5s ease;
+  }
+  .btn-magnetic:active {
+    transform: scale(0.96) translateY(0px);
+    box-shadow: 0 2px 8px rgba(34,211,238,0.10);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .btn-primary {
+    @apply relative overflow-hidden transition-all duration-300 inline-flex items-center justify-center font-medium cursor-pointer;
+    color: #fff;
+    border: 2px solid transparent;
+    border-radius: 0.625rem;
+    background: transparent;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.3s ease,
+                filter 0.2s ease;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(from var(--shine-angle),
+        #22d3ee 0deg,
+        #818cf8 90deg,
+        #e879f9 180deg,
+        #fbbf24 270deg,
+        #22d3ee 360deg
+      );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: shine-spin 3s linear infinite;
+  }
+  /* Shimmer sweep layer */
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(255,255,255,0.22) 50%,
+      transparent 65%
+    );
+    transform: translateX(-120%);
+    transition: transform 0s;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.12);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 10px 30px rgba(34,211,238,0.28), 0 5px 15px rgba(99,102,241,0.2);
+  }
+  .btn-primary:hover::before {
+    animation: shine-spin 1.2s linear infinite;
+  }
+  .btn-primary:hover::after {
+    transform: translateX(120%);
+    transition: transform 0.5s ease;
+  }
+  .btn-primary:active {
+    transform: scale(0.96) translateY(0px);
+    filter: brightness(0.95);
+    box-shadow: 0 2px 8px rgba(34,211,238,0.15);
+    transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  /* ─── Chip / badge ───────────────────────────────────── */
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+}
+
+/* ─── Noise overlay ──────────────────────────────────────── */
+.noise-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+}
+
+/* ─── Scroll-reveal base state ───────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
+              transform 0.65s cubic-bezier(0.16,1,0.3,1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Keyframes ──────────────────────────────────────────── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes draw-stroke {
+  from { stroke-dashoffset: 100; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25%       { transform: rotate(-20deg); }
+  75%       { transform: rotate(20deg); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ring-spin {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+@keyframes counter-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Utilities ──────────────────────────────────────────── */
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .font-mono {
+    font-family: 'Fira Code', monospace;
+  }
+
+  .text-gradient-violet {
+    background: linear-gradient(135deg, #8b5cf6, #e879f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-cyan {
+    background: linear-gradient(135deg, #22d3ee, #6366f1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-emerald {
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-amber {
+    background: linear-gradient(135deg, #fbbf24, #fb7185);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* ─── Sidebar nav items ──────────────────────────────────── */
+
+/* Base */
+.nav-item {
+  position: relative;
+}
+
+/* Idle state */
+.nav-item--idle {
+  color: #64748b;
+  background: transparent;
+}
+
+/* Hover: background slides in from left */
+.nav-item--idle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.nav-item--idle:hover {
+  color: #e2e8f0;
+}
+
+.nav-item--idle:hover::after {
+  transform: scaleX(1);
+}
+
+/* Click/press state — idle */
+.nav-item--idle:active {
+  transform: scale(0.96);
+  color: #22d3ee;
+  background: rgba(34,211,238,0.08);
+  transition: transform 0.08s ease, background 0.08s ease;
+}
+
+/* Active (selected) state */
+.nav-item--active {
+  color: #e2e8f0;
+  border: 1px solid transparent;
+  background:
+    rgba(34,211,238,0.07) padding-box,
+    conic-gradient(from var(--shine-angle),
+      rgba(34,211,238,0.08) 0deg,
+      rgba(34,211,238,0.55) 70deg,
+      rgba(139,92,246,0.55) 150deg,
+      rgba(34,211,238,0.08) 220deg,
+      rgba(34,211,238,0.08) 360deg
+    ) border-box;
+  animation: shine-spin 5s linear infinite;
+}
+
+/* Click/press on already-active item */
+.nav-item--active:active {
+  transform: scale(0.96);
+  filter: brightness(1.2);
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+
+/* Sign-out rose hover */
+.hover-rose:hover {
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.08);
+}
+
+.hover-rose:active {
+  transform: scale(0.96);
+  background: rgba(251, 113, 133, 0.15);
+  color: #fda4af;
+  transition: transform 0.08s ease, background 0.08s ease;
+}
+
+/* ─── Ripple keyframe ────────────────────────────────────── */
+@keyframes ripple-expand {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ─── Water wave keyframes ───────────────────────────────── */
+@keyframes wave-flow-1 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes wave-flow-2 {
+  0%   { transform: translateX(-25%); }
+  100% { transform: translateX(-75%); }
+}
+
+/* ─── Icon animation keyframes ───────────────────────────── */
+@keyframes icon-bob {
+  0%, 100% { transform: translateY(0px)   scale(1); }
+  50%       { transform: translateY(-3px) scale(1.06); }
+}
+@keyframes icon-wiggle {
+  0%,100% { transform: rotate(0deg); }
+  20%     { transform: rotate(-12deg); }
+  40%     { transform: rotate(12deg); }
+  60%     { transform: rotate(-7deg); }
+  80%     { transform: rotate(7deg); }
+}
+@keyframes icon-pulse-scale {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.22); opacity: 0.7; }
+}
+@keyframes icon-flicker {
+  0%,100% { opacity: 1;   transform: scale(1)    rotate(0deg); }
+  33%     { opacity: 0.75; transform: scale(0.94) rotate(-3deg); }
+  66%     { opacity: 0.9;  transform: scale(1.06) rotate(3deg); }
+}
+@keyframes icon-spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Icon animations: selector-based ───────────────────── */
+
+/* Sidebar idle: icon lifts on hover */
+.nav-item--idle:hover svg {
+  transform: translateY(-2.5px) scale(1.14);
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+/* Sidebar active: icon continuously bobs */
+.nav-item--active svg {
+  animation: icon-bob 2.8s ease-in-out infinite;
+}
+
+/* Buttons: icon scales up on hover */
+.btn-magnetic svg,
+.btn-primary svg {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.btn-magnetic:hover svg,
+.btn-primary:hover svg {
+  transform: scale(1.2) translateY(-1px);
+}
+
+/* Card h3 heading icons: lift when card is hovered */
+.glass-card svg {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.glass-card:hover h3 svg {
+  transform: scale(1.18) translateY(-2px);
+}
+
+/* ─── Utility animation classes ──────────────────────────── */
+.icon-pulse {
+  animation: icon-pulse-scale 2s ease-in-out infinite;
+}
+.icon-flicker {
+  animation: icon-flicker 1.8s ease-in-out infinite;
+}
+.icon-bob {
+  animation: icon-bob 3s ease-in-out infinite;
+}
+.icon-spin-slow {
+  animation: icon-spin-slow 8s linear infinite;
+}
+.icon-wiggle-hover:hover {
+  animation: icon-wiggle 0.55s ease-in-out;
+}
