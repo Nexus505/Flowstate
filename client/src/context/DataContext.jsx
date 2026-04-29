@@ -7,13 +7,16 @@ const DataContext = createContext(null);
 export function DataProvider({ children }) {
   const toast = useToast();
 
-  const [workouts,  setWorkouts]  = useState([]);
-  const [sleepData, setSleepData] = useState([]);
-  const [expenses,  setExpenses]  = useState([]);
-  const [habits,    setHabits]    = useState([]);
-  const [nutrition, setNutrition] = useState([]);
-  const [workData,  setWorkData]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [workouts,     setWorkouts]     = useState([]);
+  const [sleepData,    setSleepData]    = useState([]);
+  const [expenses,     setExpenses]     = useState([]);
+  const [habits,       setHabits]       = useState([]);
+  const [nutrition,    setNutrition]    = useState([]);
+  const [workData,     setWorkData]     = useState([]);
+  const [waterGlasses, setWaterGlasses] = useState(0);
+  const [loading,      setLoading]      = useState(true);
+
+  const TODAY = new Date().toISOString().split('T')[0];
 
   // ── Fetch all data on mount ─────────────────────────────────
   useEffect(() => {
@@ -27,14 +30,16 @@ export function DataProvider({ children }) {
       api.get('/habits'),
       api.get('/nutrition'),
       api.get('/work'),
+      api.get(`/water?date=${TODAY}`),
     ])
-      .then(([w, s, e, h, n, wk]) => {
+      .then(([w, s, e, h, n, wk, wat]) => {
         setWorkouts(w.data);
         setSleepData(s.data);
         setExpenses(e.data);
         setHabits(h.data);
         setNutrition(n.data);
         setWorkData(wk.data);
+        setWaterGlasses(wat.data.glasses ?? 0);
       })
       .catch((err) => console.error('Data fetch error:', err))
       .finally(() => setLoading(false));
@@ -197,17 +202,29 @@ export function DataProvider({ children }) {
     }
   };
 
+  // ── Water Actions ────────────────────────────────────────────
+  const updateWater = async (glasses) => {
+    const clamped = Math.max(0, Math.min(20, glasses));
+    setWaterGlasses(clamped);   // optimistic
+    try {
+      await api.put('/water', { date: TODAY, glasses: clamped });
+    } catch {
+      toast.error('Failed to save water intake.');
+    }
+  };
+
   // ── Refresh all data (called after login) ───────────────────
   const refreshAll = async () => {
     setLoading(true);
     try {
-      const [w, s, e, h, n, wk] = await Promise.all([
+      const [w, s, e, h, n, wk, wat] = await Promise.all([
         api.get('/workouts'),
         api.get('/sleep'),
         api.get('/expenses'),
         api.get('/habits'),
         api.get('/nutrition'),
         api.get('/work'),
+        api.get(`/water?date=${TODAY}`),
       ]);
       setWorkouts(w.data);
       setSleepData(s.data);
@@ -215,6 +232,7 @@ export function DataProvider({ children }) {
       setHabits(h.data);
       setNutrition(n.data);
       setWorkData(wk.data);
+      setWaterGlasses(wat.data.glasses ?? 0);
     } catch (err) {
       console.error('Refresh error:', err);
       toast.error('Failed to refresh data.');
@@ -231,6 +249,7 @@ export function DataProvider({ children }) {
       habits,    addHabit,    toggleHabit,  deleteHabit,
       nutrition, addMeal,     deleteNutritionDay, deleteMeal,
       workData,  addWork,     deleteWork,
+      waterGlasses, updateWater,
       loading,   refreshAll,
     }}>
       {children}

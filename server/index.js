@@ -19,6 +19,7 @@ app.use('/api/nutrition', require('./routes/nutrition'));
 app.use('/api/expenses',  require('./routes/expenses'));
 app.use('/api/work',      require('./routes/work'));
 app.use('/api/habits',    require('./routes/habits'));
+app.use('/api/water',     require('./routes/water'));
 app.use('/api/ai',        require('./routes/ai'));
 
 // ── Health check ──────────────────────────────────────────────

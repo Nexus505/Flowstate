@@ -57,6 +57,22 @@
   * {
     border-color: var(--border-subtle);
   }
+
+  /* ─── Autofill override ──────────────────────────────────
+     Browsers force a white/yellow background on autofilled
+     inputs. The inset box-shadow trick paints over it with
+     our dark surface colour. The 9999s transition delay
+     prevents Chrome from snapping back to white.            */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 9999px #0a0c10 inset !important;
+    box-shadow:         0 0 0 9999px #0a0c10 inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    caret-color: #e2e8f0;
+    transition: background-color 9999s ease-in-out 0s;
+  }
 }
 
 @layer components {

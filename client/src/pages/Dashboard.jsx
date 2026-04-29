@@ -182,26 +182,14 @@ const HeatCell = ({ active, delay }) => {
 
 /* ─── Water counter card ─────────────────────────────────── */
 const WaterCard = () => {
-  const TODAY = new Date().toISOString().split('T')[0];
+  const { waterGlasses: glasses, updateWater } = useData();
 
-  const [glasses, setGlasses] = useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('fs_water'));
-      if (stored?.date === TODAY) return stored.count;
-    } catch {}
-    return 0;
-  });
-
-  const goal = 8;
+  const goal    = 8;
   const fillPct = Math.round((glasses / goal) * 100);
 
-  const updateGlasses = (val) => {
-    setGlasses(val);
-    localStorage.setItem('fs_water', JSON.stringify({ date: TODAY, count: val }));
-  };
+  const add    = () => updateWater(glasses + 1);
+  const remove = () => updateWater(glasses - 1);
 
-  const add    = () => updateGlasses(Math.min(glasses + 1, goal));
-  const remove = () => updateGlasses(Math.max(glasses - 1, 0));
 
   /* ── Canvas water animation ── */
   const canvasRef    = useRef(null);

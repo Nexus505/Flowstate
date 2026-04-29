@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, Check, AlertTriangle, KeyRound } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, Check, AlertTriangle, KeyRound, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import StarField from '../components/StarField';
 import { useAuth } from '../context/AuthContext';
@@ -132,27 +132,40 @@ function ForgotPasswordPanel({ onBack }) {
 /* ──────────────────────────────────────────────────────────── */
 
 export default function Auth() {
-  const [isLogin,       setIsLogin]       = useState(true);
-  const [showForgot,    setShowForgot]    = useState(false);
-  const [error,         setError]         = useState('');
-  const [loading,       setLoading]       = useState(false);
+  const [isLogin,    setIsLogin]    = useState(true);
+  const [showForgot, setShowForgot] = useState(false);
+  const [error,      setError]      = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [password,   setPassword]   = useState('');
   const navigate = useNavigate();
   const { login, register } = useAuth();
   const { refreshAll } = useData();
 
-  const nameRef     = useRef();
-  const emailRef    = useRef();
-  const passwordRef = useRef();
+  const nameRef  = useRef();
+  const emailRef = useRef();
+
+  /* Password rules (sign-up only) */
+  const pwRules = [
+    { label: 'At least 8 characters',      ok: password.length >= 8 },
+    { label: 'One uppercase letter (A–Z)',  ok: /[A-Z]/.test(password) },
+    { label: 'One number (0–9)',            ok: /[0-9]/.test(password) },
+    { label: 'One special character',       ok: /[^A-Za-z0-9]/.test(password) },
+  ];
+  const allRulesMet = pwRules.every(r => r.ok);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!isLogin && !allRulesMet) {
+      setError('Please satisfy all password requirements.');
+      return;
+    }
     setLoading(true);
     try {
       if (isLogin) {
-        await login(emailRef.current.value, passwordRef.current.value);
+        await login(emailRef.current.value, password);
       } else {
-        await register(nameRef.current.value, emailRef.current.value, passwordRef.current.value);
+        await register(nameRef.current.value, emailRef.current.value, password);
       }
       await refreshAll();
       navigate('/app');
@@ -166,6 +179,7 @@ export default function Auth() {
   const switchTab = (login) => {
     setIsLogin(login);
     setError('');
+    setPassword('');
     setShowForgot(false);
   };
 
@@ -248,10 +262,49 @@ export default function Auth() {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary group-focus-within:text-cyan-400 transition-colors">
                     <Lock size={18} />
                   </div>
-                  <input ref={passwordRef} id="auth-password" type="password" placeholder="Password" required
-                    className="w-full h-full bg-[#0a0c10]/60 border border-white/5 rounded-xl pl-11 pr-4 text-white text-sm outline-none focus:border-cyan-500/40 focus:bg-[#0a0c10] transition-all placeholder:text-secondary/50" />
+                  <input
+                    id="auth-password"
+                    type="password"
+                    placeholder="Password"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full h-full bg-[#0a0c10]/60 border border-white/5 rounded-xl pl-11 pr-4 text-white text-sm outline-none focus:border-cyan-500/40 focus:bg-[#0a0c10] transition-all placeholder:text-secondary/50"
+                  />
                 </div>
               </div>
+
+              {/* Password requirements (sign-up only, visible when typing) */}
+              {!isLogin && password.length > 0 && (
+                <div
+                  className="rounded-xl border border-white/5 bg-[#0a0c10]/60 px-4 py-3 flex flex-col gap-2"
+                  style={{ animation: 'fadeSlideIn 0.25s ease both' }}
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <ShieldCheck size={12} className="text-secondary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-secondary">Password requirements</span>
+                  </div>
+                  {pwRules.map(rule => (
+                    <div key={rule.label} className="flex items-center gap-2">
+                      <div
+                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300"
+                        style={{
+                          backgroundColor: rule.ok ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.04)',
+                          border: rule.ok ? '1px solid rgba(52,211,153,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        {rule.ok && <Check size={8} className="text-emerald-400" strokeWidth={3} />}
+                      </div>
+                      <span
+                        className="text-xs transition-colors duration-300"
+                        style={{ color: rule.ok ? '#34d399' : 'rgba(255,255,255,0.35)' }}
+                      >
+                        {rule.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Forgot password link */}
               <div className={`flex justify-end transition-all duration-300 ${isLogin ? 'opacity-100 h-auto -mt-1' : 'opacity-0 h-0 overflow-hidden mt-0'}`}>
@@ -290,6 +343,13 @@ export default function Auth() {
           </>
         )}
       </div>
+
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
