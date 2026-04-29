@@ -22,6 +22,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// PUT /api/expenses/:id
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const expense = await Expense.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!expense) return res.status(404).json({ message: 'Not found' });
+    res.json(expense);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // DELETE /api/expenses/:id
 router.delete('/:id', auth, async (req, res) => {
   try {

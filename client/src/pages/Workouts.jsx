@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Dumbbell, Flame, Timer, Activity, Plus, Trophy, Zap, TrendingUp, Target, Calendar } from 'lucide-react';
+import { Dumbbell, Flame, Timer, Activity, Plus, Trophy, Zap, TrendingUp, Target, Calendar, Trash2 } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 const AnimatedCounter = ({ value, duration = 1500 }) => {
@@ -85,11 +86,14 @@ export default function Workouts() {
   const r3 = useReveal(300);
   const r4 = useReveal(400);
 
-  const { workouts, addWorkout } = useData();
+  const { workouts, addWorkout, deleteWorkout, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ type: 'Gym', date: new Date().toISOString().split('T')[0], duration: '', calories: '', intensity: 3, notes: '' });
   const [mounted, setMounted] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 120); return () => clearTimeout(t); }, []);
+
+  if (loading) return <PageSkeleton />;
 
   /* ── Computed Stats ──────────────────────────────────────── */
   const totalWorkouts  = workouts.length;
@@ -396,8 +400,8 @@ export default function Workouts() {
             const intensityPct = (workout.intensity / 5) * 100;
             const calPct = Math.min((workout.calories / 800) * 100, 100);
             return (
-              <div key={i}
-                className={`group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-opacity-40 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04]`}
+              <div key={workout._id}
+                className={`group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-opacity-40 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04] ${deletingId === workout._id ? 'opacity-0 -translate-x-4' : ''}`}
                 style={{ '--hover-border': cfg.color }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = cfg.color + '55'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}
@@ -451,6 +455,14 @@ export default function Workouts() {
                       ))}
                     </div>
                   </div>
+                  {/* Delete button */}
+                  <button
+                    onClick={() => { setDeletingId(workout._id); setTimeout(() => deleteWorkout(workout._id), 300); }}
+                    className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200 shrink-0 ml-2"
+                    title="Delete workout"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             );

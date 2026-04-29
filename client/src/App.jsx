@@ -15,6 +15,7 @@ import ResetPassword from './pages/ResetPassword';
 import Settings from './pages/Settings';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 
 /* ── Ambient atmospheric orbs fixed in the bg ── */
 const AmbientOrbs = () => (
@@ -103,9 +104,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <DataProvider>
-          <AppRoutes />
-        </DataProvider>
+        <ToastProvider>
+          <DataProvider>
+            <AppRoutes />
+          </DataProvider>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );

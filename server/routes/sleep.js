@@ -22,6 +22,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// PUT /api/sleep/:id
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const entry = await Sleep.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!entry) return res.status(404).json({ message: 'Not found' });
+    res.json(entry);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // DELETE /api/sleep/:id
 router.delete('/:id', auth, async (req, res) => {
   try {

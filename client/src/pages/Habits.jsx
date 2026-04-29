@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { CheckCircle2, Circle, Flame, Target, Plus, TrendingUp, Droplets, Brain, BookOpen, Calendar } from 'lucide-react';
+import { CheckCircle2, Circle, Flame, Target, Plus, TrendingUp, Droplets, Brain, BookOpen, Calendar, Trash2 } from 'lucide-react';
 
 const iconMap = {
   "Droplets": Droplets,
@@ -11,6 +11,7 @@ import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { HabitsSkeleton } from '../components/SkeletonLoader';
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 const AnimatedCounter = ({ value, duration = 1200 }) => {
@@ -69,10 +70,14 @@ export default function Habits() {
   const r1 = useReveal(100);
   const r2 = useReveal(200);
 
-  const { habits, toggleHabit } = useData();
+  const { habits, toggleHabit, addHabit, deleteHabit, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [habitForm, setHabitForm] = useState({ name: '', color: '#34d399', icon: 'Target', frequency: 'daily' });
   useEffect(() => { const t = setTimeout(() => setMounted(true), 120); return () => clearTimeout(t); }, []);
+
+  if (loading) return <HabitsSkeleton />;
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -160,13 +165,12 @@ export default function Habits() {
           const IconComponent = iconMap[habit.icon] || Target;
           return (
             <div 
-              key={habit.id} 
-              className={`group relative overflow-hidden glass-card p-6 flex flex-col gap-6 cursor-pointer transition-all duration-300 bg-white/[0.02]`}
+              key={habit._id} 
+              className={`group relative overflow-hidden glass-card p-6 flex flex-col gap-6 cursor-pointer transition-all duration-300 bg-white/[0.02] ${deletingId === habit._id ? 'opacity-0 scale-95' : ''}`}
               style={{
                 borderColor: doneToday ? habit.color + '55' : 'rgba(255,255,255,0.05)',
                 boxShadow: doneToday ? `0 0 20px ${habit.color}15` : 'none',
               }}
-              onClick={() => toggleHabit(habit.id)}
             >
               {/* Radial glow background */}
               <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -187,9 +191,19 @@ export default function Habits() {
                     </p>
                   </div>
                 </div>
-                <div className={`transition-all duration-300 mt-2 ${doneToday ? 'scale-110' : 'text-white/20'}`}
-                     style={{ color: doneToday ? habit.color : undefined, filter: doneToday ? `drop-shadow(0 0 6px ${habit.color}88)` : 'none' }}>
-                  {doneToday ? <CheckCircle2 size={30} className="fill-white/10" /> : <Circle size={30} />}
+                <div className="flex items-center gap-2">
+                  <div className={`transition-all duration-300 ${doneToday ? 'scale-110' : 'text-white/20'}`}
+                       style={{ color: doneToday ? habit.color : undefined, filter: doneToday ? `drop-shadow(0 0 6px ${habit.color}88)` : 'none' }}
+                       onClick={() => toggleHabit(habit._id)}>
+                    {doneToday ? <CheckCircle2 size={30} className="fill-white/10" /> : <Circle size={30} />}
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeletingId(habit._id); setTimeout(() => deleteHabit(habit._id), 300); }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200"
+                    title="Delete habit"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
               
@@ -228,34 +242,36 @@ export default function Habits() {
       </div>
 
       <GlassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Habit">
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-4" onSubmit={async (e) => {
+          e.preventDefault();
+          if (!habitForm.name.trim()) return;
+          await addHabit({ name: habitForm.name, color: habitForm.color, icon: habitForm.icon, frequency: habitForm.frequency });
+          setHabitForm({ name: '', color: '#34d399', icon: 'Target', frequency: 'daily' });
+          setIsModalOpen(false);
+        }}>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-secondary uppercase tracking-widest mb-1.5">Habit Name</label>
-              <input type="text" placeholder="e.g. Read 10 Pages" className="w-full bg-[#0a0c10]/60 border border-white/5 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/40 transition-all placeholder:text-white/20" />
+              <input type="text" value={habitForm.name} onChange={e => setHabitForm(p => ({...p, name: e.target.value}))} placeholder="e.g. Read 10 Pages" className="w-full bg-[#0a0c10]/60 border border-white/5 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/40 transition-all placeholder:text-white/20" />
             </div>
-            <div>
-              <label className="block text-xs font-mono text-secondary uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Calendar size={12}/> Start Date</label>
-              <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full bg-[#0a0c10]/60 border border-white/5 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/40 transition-all cursor-pointer [color-scheme:dark]" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-secondary uppercase tracking-widest mb-1.5">Frequency</label>
-              <select className="w-full bg-[#0a0c10]/60 border border-white/5 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/40 transition-all appearance-none cursor-pointer">
+              <select value={habitForm.frequency} onChange={e => setHabitForm(p => ({...p, frequency: e.target.value}))} className="w-full bg-[#0a0c10]/60 border border-white/5 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/40 transition-all appearance-none cursor-pointer">
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="weekdays">Weekdays Only</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-mono text-secondary uppercase tracking-widest mb-1.5">Color Theme</label>
-              <div className="flex gap-2 mt-2">
-                {['#34d399', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'].map(c => (
-                   <div key={c} className="w-6 h-6 rounded-full cursor-pointer hover:scale-110 transition-transform" style={{ backgroundColor: c, boxShadow: `0 0 10px ${c}40` }} />
-                ))}
-              </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-secondary uppercase tracking-widest mb-1.5">Color Theme</label>
+            <div className="flex gap-2 mt-2">
+              {['#34d399', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'].map(c => (
+                <div key={c} onClick={() => setHabitForm(p => ({...p, color: c}))} className={`w-8 h-8 rounded-full cursor-pointer hover:scale-110 transition-transform flex items-center justify-center ${habitForm.color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0c10]' : ''}`} style={{ backgroundColor: c, boxShadow: `0 0 10px ${c}40` }}>
+                  {habitForm.color === c && <CheckCircle2 size={14} className="text-white" />}
+                </div>
+              ))}
             </div>
           </div>
 

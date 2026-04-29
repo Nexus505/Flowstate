@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import { useToast } from './ToastContext';
 
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
+  const toast = useToast();
+
   const [workouts,  setWorkouts]  = useState([]);
   const [sleepData, setSleepData] = useState([]);
   const [expenses,  setExpenses]  = useState([]);
@@ -37,43 +40,161 @@ export function DataProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Actions ─────────────────────────────────────────────────
+  // ── Workout Actions ─────────────────────────────────────────
   const addWorkout = async (w) => {
-    const { data } = await api.post('/workouts', w);
-    setWorkouts(prev => [data, ...prev]);
+    try {
+      const { data } = await api.post('/workouts', w);
+      setWorkouts(prev => [data, ...prev]);
+      toast.success('Workout logged!');
+    } catch {
+      toast.error('Failed to log workout.');
+    }
   };
 
+  const deleteWorkout = async (id) => {
+    try {
+      await api.delete(`/workouts/${id}`);
+      setWorkouts(prev => prev.filter(w => w._id !== id));
+      toast.success('Workout deleted.');
+    } catch {
+      toast.error('Failed to delete workout.');
+    }
+  };
+
+  // ── Sleep Actions ───────────────────────────────────────────
   const addSleep = async (s) => {
-    const { data } = await api.post('/sleep', s);
-    setSleepData(prev => [data, ...prev]);
+    try {
+      const { data } = await api.post('/sleep', s);
+      setSleepData(prev => [data, ...prev]);
+      toast.success('Sleep logged!');
+    } catch {
+      toast.error('Failed to log sleep.');
+    }
   };
 
+  const deleteSleep = async (id) => {
+    try {
+      await api.delete(`/sleep/${id}`);
+      setSleepData(prev => prev.filter(s => s._id !== id));
+      toast.success('Sleep entry deleted.');
+    } catch {
+      toast.error('Failed to delete entry.');
+    }
+  };
+
+  // ── Expense Actions ─────────────────────────────────────────
   const addExpense = async (e) => {
-    const { data } = await api.post('/expenses', e);
-    setExpenses(prev => [data, ...prev]);
+    try {
+      const { data } = await api.post('/expenses', e);
+      setExpenses(prev => [data, ...prev]);
+      toast.success('Transaction added!');
+    } catch {
+      toast.error('Failed to add transaction.');
+    }
   };
 
+  const deleteExpense = async (id) => {
+    try {
+      await api.delete(`/expenses/${id}`);
+      setExpenses(prev => prev.filter(e => e._id !== id));
+      toast.success('Transaction deleted.');
+    } catch {
+      toast.error('Failed to delete transaction.');
+    }
+  };
+
+  // ── Nutrition Actions ───────────────────────────────────────
   const addMeal = async (meal, date) => {
-    const { data } = await api.post('/nutrition', { meal, date });
-    setNutrition(prev => {
-      const idx = prev.findIndex(d => d._id === data._id);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx] = data;
-        return updated;
-      }
-      return [data, ...prev];
-    });
+    try {
+      const { data } = await api.post('/nutrition', { meal, date });
+      setNutrition(prev => {
+        const idx = prev.findIndex(d => d._id === data._id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = data;
+          return updated;
+        }
+        return [data, ...prev];
+      });
+      toast.success('Meal logged!');
+    } catch {
+      toast.error('Failed to log meal.');
+    }
   };
 
+  const deleteNutritionDay = async (id) => {
+    try {
+      await api.delete(`/nutrition/${id}`);
+      setNutrition(prev => prev.filter(n => n._id !== id));
+      toast.success('Day entry deleted.');
+    } catch {
+      toast.error('Failed to delete entry.');
+    }
+  };
+
+  const deleteMeal = async (dayId, mealIdx) => {
+    try {
+      const { data } = await api.delete(`/nutrition/${dayId}/meal/${mealIdx}`);
+      if (data.removed) {
+        setNutrition(prev => prev.filter(n => n._id !== dayId));
+      } else {
+        setNutrition(prev => prev.map(n => n._id === dayId ? data : n));
+      }
+      toast.success('Meal deleted.');
+    } catch {
+      toast.error('Failed to delete meal.');
+    }
+  };
+
+  // ── Work Actions ────────────────────────────────────────────
   const addWork = async (w) => {
-    const { data } = await api.post('/work', w);
-    setWorkData(prev => [data, ...prev]);
+    try {
+      const { data } = await api.post('/work', w);
+      setWorkData(prev => [data, ...prev]);
+      toast.success('Session logged!');
+    } catch {
+      toast.error('Failed to log session.');
+    }
+  };
+
+  const deleteWork = async (id) => {
+    try {
+      await api.delete(`/work/${id}`);
+      setWorkData(prev => prev.filter(w => w._id !== id));
+      toast.success('Session deleted.');
+    } catch {
+      toast.error('Failed to delete session.');
+    }
+  };
+
+  // ── Habit Actions ───────────────────────────────────────────
+  const addHabit = async (h) => {
+    try {
+      const { data } = await api.post('/habits', h);
+      setHabits(prev => [data, ...prev]);
+      toast.success(`"${h.name}" habit created!`);
+    } catch {
+      toast.error('Failed to create habit.');
+    }
   };
 
   const toggleHabit = async (id) => {
-    const { data } = await api.patch(`/habits/${id}/toggle`);
-    setHabits(prev => prev.map(h => h._id === id ? data : h));
+    try {
+      const { data } = await api.patch(`/habits/${id}/toggle`);
+      setHabits(prev => prev.map(h => h._id === id ? data : h));
+    } catch {
+      toast.error('Failed to update habit.');
+    }
+  };
+
+  const deleteHabit = async (id) => {
+    try {
+      await api.delete(`/habits/${id}`);
+      setHabits(prev => prev.filter(h => h._id !== id));
+      toast.success('Habit deleted.');
+    } catch {
+      toast.error('Failed to delete habit.');
+    }
   };
 
   // ── Refresh all data (called after login) ───────────────────
@@ -96,6 +217,7 @@ export function DataProvider({ children }) {
       setWorkData(wk.data);
     } catch (err) {
       console.error('Refresh error:', err);
+      toast.error('Failed to refresh data.');
     } finally {
       setLoading(false);
     }
@@ -103,12 +225,12 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      workouts,  addWorkout,
-      sleepData, addSleep,
-      expenses,  addExpense,
-      habits,    toggleHabit,
-      nutrition, addMeal,
-      workData,  addWork,
+      workouts,  addWorkout,  deleteWorkout,
+      sleepData, addSleep,    deleteSleep,
+      expenses,  addExpense,  deleteExpense,
+      habits,    addHabit,    toggleHabit,  deleteHabit,
+      nutrition, addMeal,     deleteNutritionDay, deleteMeal,
+      workData,  addWork,     deleteWork,
       loading,   refreshAll,
     }}>
       {children}

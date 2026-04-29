@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Wallet, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Activity, Calendar } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Activity, Calendar, Trash2 } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 const AnimatedCounter = ({ value, duration = 1400 }) => {
@@ -85,12 +86,14 @@ export default function Expenses() {
   const r2 = useReveal(200);
   const r3 = useReveal(300);
 
+  const { expenses: expensesData, addExpense, deleteExpense, loading } = useData();
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], category: 'Food', description: '' });
+  const [deletingId, setDeletingId] = useState(null);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 120); return () => clearTimeout(t); }, []);
 
-  const { expenses: expensesData, addExpense } = useData();
+  if (loading) return <PageSkeleton />;
   
   const totalIncome  = expensesData.filter(e => e.type === 'income').reduce((a, c) => a + c.amount, 0);
   const totalExpense = expensesData.filter(e => e.type === 'expense').reduce((a, c) => a + c.amount, 0);
@@ -247,8 +250,8 @@ export default function Expenses() {
                 }
 
                 return (
-                  <div key={i} 
-                       className="group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-white/20 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04]">
+                  <div key={txn._id} 
+                       className={`group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-white/20 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04] ${deletingId === txn._id ? 'opacity-0 -translate-x-4' : ''}`}>
                     
                     {/* Bottom accent line */}
                     <div className="absolute bottom-0 left-0 h-0.5 w-full rounded-full opacity-50 group-hover:opacity-100 transition-opacity"
@@ -279,6 +282,13 @@ export default function Expenses() {
                             style={{ color: isIncome ? '#34d399' : '#f3f4f6' }}>
                         {isIncome ? '+' : '-'}$<AnimatedFloat value={txn.amount} />
                       </span>
+                      <button
+                        onClick={() => { setDeletingId(txn._id); setTimeout(() => deleteExpense(txn._id), 300); }}
+                        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200 shrink-0"
+                        title="Delete transaction"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 );

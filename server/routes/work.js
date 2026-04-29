@@ -22,6 +22,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// PUT /api/work/:id
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const session = await Work.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!session) return res.status(404).json({ message: 'Not found' });
+    res.json(session);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // DELETE /api/work/:id
 router.delete('/:id', auth, async (req, res) => {
   try {

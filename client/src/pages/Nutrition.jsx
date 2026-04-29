@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Apple, Beef, Flame, Zap, Droplet, Plus, Calendar } from 'lucide-react';
+import { Apple, Beef, Flame, Zap, Droplet, Plus, Calendar, Trash2 } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 /* ── Small animated radial arc ────────────────────────────── */
 const Arc = ({ pct, color1, color2, id, mounted }) => {
@@ -63,7 +64,10 @@ export default function Nutrition() {
     return () => clearTimeout(t);
   }, []);
 
-  const { nutrition: nutritionData, addMeal } = useData();
+  const { nutrition: nutritionData, addMeal, deleteMeal, loading } = useData();
+  const [deletingId, setDeletingId] = useState(null);
+
+  if (loading) return <PageSkeleton />;
   const todayStr = new Date().toISOString().split('T')[0];
   const todayEntry = nutritionData.find(d => d.date === todayStr) || nutritionData[0] || { meals: [] };
 
@@ -267,7 +271,7 @@ export default function Nutrition() {
           {todayEntry.meals.map((meal, i) => {
             const mealTotal = meal.protein + meal.carbs + meal.fat;
             return (
-              <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 hover:border-white/10 hover:bg-white/[0.035] transition-all duration-200 group">
+              <div key={i} className={`bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 hover:border-white/10 hover:bg-white/[0.035] transition-all duration-200 group ${deletingId === i ? 'opacity-0 -translate-x-4' : ''}`}>
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
@@ -278,6 +282,14 @@ export default function Nutrition() {
                       <p className="text-[11px] text-secondary font-mono mt-0.5">{meal.calories} kcal total</p>
                     </div>
                   </div>
+                  {/* Delete meal button */}
+                  <button
+                    onClick={() => { setDeletingId(i); setTimeout(() => { deleteMeal(todayEntry._id, i); setDeletingId(null); }, 300); }}
+                    className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200 shrink-0"
+                    title="Delete meal"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                   <span className="text-xs font-bold text-amber-400 font-mono bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-lg flex-shrink-0">
                     {meal.calories} kcal
                   </span>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Briefcase, CheckCircle, BarChart3, Plus, Clock, Zap, TrendingUp, Star, Coffee, Calendar } from 'lucide-react';
+import { Briefcase, CheckCircle, BarChart3, Plus, Clock, Zap, TrendingUp, Star, Coffee, Calendar, Trash2 } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 const AnimatedCounter = ({ value, duration = 1400 }) => {
@@ -89,11 +90,14 @@ export default function Work() {
   const r2 = useReveal(200);
   const r3 = useReveal(300);
 
-  const { workData, addWork } = useData();
+  const { workData, addWork, deleteWork, loading } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], hoursWorked: '', tasksCompleted: '', focusSessions: '', mood: 4, notes: '' });
   const [mounted, setMounted] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 120); return () => clearTimeout(t); }, []);
+
+  if (loading) return <PageSkeleton />;
 
   /* ── Computed Stats ──────────────────────────────────────── */
   const count       = workData.length || 1; // prevent division by zero
@@ -326,11 +330,11 @@ export default function Work() {
         <div className="flex flex-col gap-3">
           {workData.length === 0 ? (
             <p className="text-sm text-secondary text-center py-8 font-mono">No sessions logged yet. Hit "Log Session" to get started.</p>
-          ) : workData.map((log, i) => {
+          ) : workData.map((log) => {
             const hoursPct = Math.min((log.hoursWorked / 10) * 100, 100);
             return (
-              <div key={i}
-                className="group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-blue-500/25 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04]"
+              <div key={log._id}
+                className={`group relative overflow-hidden bg-white/[0.02] border border-white/5 hover:border-blue-500/25 rounded-2xl p-4 transition-all duration-300 hover:bg-white/[0.04] ${deletingId === log._id ? 'opacity-0 -translate-x-4' : ''}`}
               >
                 {/* hours fill bar at bottom */}
                 <div className="absolute bottom-0 left-0 h-0.5 rounded-full transition-all duration-1000 ease-out"
@@ -383,6 +387,14 @@ export default function Work() {
                       )}
                     </div>
                   </div>
+                  {/* Delete button */}
+                  <button
+                    onClick={() => { setDeletingId(log._id); setTimeout(() => deleteWork(log._id), 300); }}
+                    className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200 shrink-0 ml-2"
+                    title="Delete session"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             );

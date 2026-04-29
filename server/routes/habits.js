@@ -22,6 +22,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// PUT /api/habits/:id  — update habit details
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const habit = await Habit.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!habit) return res.status(404).json({ message: 'Not found' });
+    res.json(habit);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // PATCH /api/habits/:id/toggle  — toggle today's completion
 router.patch('/:id/toggle', auth, async (req, res) => {
   try {

@@ -7,6 +7,7 @@ import {
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import { useData } from '../context/DataContext';
+import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 /* ─── Animated SVG Ring (multi-colour gradient stroke) ── */
 const GradientRing = ({ value, max, gradId, colors, label, icon: Icon, unit = '' }) => {
@@ -385,8 +386,9 @@ export default function Dashboard() {
   const r5 = useReveal(340);
   const r6 = useReveal(400);
 
-  /* ─── Live data from shared context ────────────────────── */
-  const { sleepData, workouts, expenses, habits } = useData();
+  const { sleepData, workouts, expenses, habits, loading } = useData();
+
+  if (loading) return <DashboardSkeleton />;
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -401,27 +403,27 @@ export default function Dashboard() {
   const workoutsThisWeek = workouts.filter(w => new Date(w.date) >= startOfWeek).length;
   const workoutGoal = 5;
 
-  // Expenses: today's spend (handle full ISO date strings from MongoDB)
+  // Expenses: today's spend
   const todaySpend = expenses
     .filter(e => {
       const d = new Date(e.date).toISOString().split('T')[0];
       return d === todayStr && e.type === 'expense';
     })
     .reduce((a, c) => a + c.amount, 0);
-  const spendGoal  = 200;
+  const spendGoal = 200;
 
   // Habits: completed today
   const habitsToday = habits.filter(h => h.completedDates?.includes(todayStr)).length;
-  const habitsTotal = Math.max(habits.length, 1); // prevent 0/0 = NaN
+  const habitsTotal = Math.max(habits.length, 1);
 
-  /* Donut segments — derived from real expenses */
+  /* Donut segments */
   const catColors = {
-    Food: { c1: '#22d3ee', c2: '#6366f1' },
-    Transport: { c1: '#8b5cf6', c2: '#e879f9' },
-    Housing: { c1: '#34d399', c2: '#22d3ee' },
+    Food:          { c1: '#22d3ee', c2: '#6366f1' },
+    Transport:     { c1: '#8b5cf6', c2: '#e879f9' },
+    Housing:       { c1: '#34d399', c2: '#22d3ee' },
     Entertainment: { c1: '#fbbf24', c2: '#f97316' },
-    Software: { c1: '#f472b6', c2: '#fb7185' },
-    Other: { c1: '#94a3b8', c2: '#64748b' },
+    Software:      { c1: '#f472b6', c2: '#fb7185' },
+    Other:         { c1: '#94a3b8', c2: '#64748b' },
   };
   const expList = expenses.filter(e => e.type === 'expense');
   const catSumsRaw = expList.reduce((acc, e) => {
@@ -445,14 +447,14 @@ export default function Dashboard() {
   });
 
   // Consistency map stats
-  const bestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak || 0)) : 0;
+  const bestStreak    = habits.length > 0 ? Math.max(...habits.map(h => h.streak || 0)) : 0;
   const todayDoneCount = habits.filter(h => h.completedDates?.includes(todayStr)).length;
-  const completionPct = habits.length > 0 ? Math.round((todayDoneCount / habits.length) * 100) : 0;
-  const bestHabit = habits.length > 0
+  const completionPct  = habits.length > 0 ? Math.round((todayDoneCount / habits.length) * 100) : 0;
+  const bestHabit      = habits.length > 0
     ? habits.reduce((best, h) => (h.streak || 0) > (best.streak || 0) ? h : best, habits[0])
     : null;
 
-  // Expense totals for donut
+  // Total expense amount for donut center
   const totalExpenseAmt = expenses
     .filter(e => e.type === 'expense')
     .reduce((a, c) => a + c.amount, 0);

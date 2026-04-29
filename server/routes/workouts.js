@@ -22,6 +22,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// PUT /api/workouts/:id
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const workout = await Workout.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!workout) return res.status(404).json({ message: 'Not found' });
+    res.json(workout);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // DELETE /api/workouts/:id
 router.delete('/:id', auth, async (req, res) => {
   try {

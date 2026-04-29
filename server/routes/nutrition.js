@@ -47,4 +47,27 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// DELETE /api/nutrition/:id/meal/:mealIdx  — remove a single meal from a day
+router.delete('/:id/meal/:mealIdx', auth, async (req, res) => {
+  try {
+    const entry = await Nutrition.findOne({ _id: req.params.id, user: req.user.id });
+    if (!entry) return res.status(404).json({ message: 'Not found' });
+
+    const idx = parseInt(req.params.mealIdx);
+    if (idx < 0 || idx >= entry.meals.length) return res.status(400).json({ message: 'Invalid meal index' });
+
+    entry.meals.splice(idx, 1);
+
+    if (entry.meals.length === 0) {
+      await Nutrition.findByIdAndDelete(entry._id);
+      return res.json({ message: 'Deleted', removed: true });
+    }
+
+    await entry.save();
+    res.json(entry);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Moon, Star, Clock, AlertCircle, Plus, Info, ChevronRight, Calendar } from 'lucide-react';
+import { Moon, Star, Clock, AlertCircle, Plus, Info, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
 import { useData } from '../context/DataContext';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 const AnimatedFloatCounter = ({ value, duration = 1500, decimals = 1 }) => {
   const [count, setCount] = useState(0);
@@ -40,10 +41,10 @@ export default function Sleep() {
   const r2 = useReveal(200);
   const r3 = useReveal(300);
 
-  const { sleepData, addSleep } = useData();
+  const { sleepData, addSleep, deleteSleep, loading } = useData();
+  const [deletingId, setDeletingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], hours: '', quality: 4, notes: '' });
-
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 100);
@@ -60,6 +61,8 @@ export default function Sleep() {
   const past7Quality = (past7.reduce((acc, curr) => acc + curr.quality, 0) / past7.length).toFixed(1);
 
 
+
+  if (loading) return <PageSkeleton />;
 
   return (
     <div className="max-w-6xl mx-auto pb-28 space-y-8">
@@ -218,8 +221,8 @@ export default function Sleep() {
           </div>
           
           <div className="divide-y divide-white/5 flex-1 overflow-y-auto pr-2 scrollbar-hide">
-            {sleepData.slice(0, 5).map((entry, i) => (
-              <div key={i} className="py-4 flex items-center justify-between group hover:bg-white/[0.02] -mx-2 px-2 rounded-xl transition-colors">
+            {sleepData.slice(0, 5).map((entry) => (
+              <div key={entry._id} className={`py-4 flex items-center justify-between group hover:bg-white/[0.02] -mx-2 px-2 rounded-xl transition-all duration-300 ${deletingId === entry._id ? 'opacity-0 -translate-x-4' : ''}`}>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-mono text-xs text-secondary shrink-0">
                     {new Date(entry.date).getDate()}
@@ -234,6 +237,13 @@ export default function Sleep() {
                     {entry.notes && <p className="text-xs text-secondary mt-0.5 truncate">{entry.notes}</p>}
                   </div>
                 </div>
+                <button
+                  onClick={() => { setDeletingId(entry._id); setTimeout(() => deleteSleep(entry._id), 300); }}
+                  className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-rose-500/15 text-secondary hover:text-rose-400 transition-all duration-200"
+                  title="Delete entry"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
           </div>
