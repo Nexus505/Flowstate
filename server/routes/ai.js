@@ -99,19 +99,51 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
     // ── Call Gemini ────────────────────────────────────────────
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const result = await model.generateContent(prompt);
+    // Helper: call with one retry on 429
+    const callWithRetry = async () => {
+      try {
+        return await model.generateContent(prompt);
+      } catch (e) {
+        if (e.message && e.message.includes('429')) {
+          // Extract retry delay from error message if present, default 30s
+          const match = e.message.match(/(\d+)s/);
+          const delay = match ? (parseInt(match[1]) + 2) * 1000 : 32000;
+          await new Promise(r => setTimeout(r, delay));
+          return await model.generateContent(prompt); // one retry
+        }
+        throw e;
+      }
+    };
+
+    const result = await callWithRetry();
     const text   = result.response.text();
 
-    // Strip any markdown code fences if present
-    const clean  = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+    // Extract JSON — strip markdown fences and grab first {...} block
+    let clean = text.replace(/```json|```/gi, '').trim();
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Gemini returned no valid JSON block');
+    clean = jsonMatch[0];
+
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch (parseErr) {
+      console.error('JSON parse failed. Raw text:', text.slice(0, 500));
+      throw new Error('Gemini response could not be parsed as JSON');
+    }
 
     res.json(parsed);
   } catch (err) {
     console.error('AI insights error:', err.message);
-    res.status(500).json({ message: 'AI analysis failed', error: err.message });
+    const is429 = err.message?.includes('429');
+    const msg   = is429
+      ? 'Rate limit reached. Please wait a moment and try again.'
+      : err.message?.includes('JSON')
+        ? 'AI returned an unexpected response format. Please try again.'
+        : 'AI analysis failed. Please try again.';
+    res.status(is429 ? 429 : 500).json({ message: msg, error: err.message });
   }
 });
 

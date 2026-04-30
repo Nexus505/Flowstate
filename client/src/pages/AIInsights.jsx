@@ -20,12 +20,13 @@ const moduleIcon = {
 
 /* ─── Score Ring ─────────────────────────────────────────── */
 const ScoreRing = ({ score, label, mounted }) => {
-  const size = 160, stroke = 14;
-  const r    = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (mounted ? score / 100 : 0) * circ;
-  const color  = score >= 80 ? '#34d399' : score >= 60 ? '#fbbf24' : '#fb7185';
-  const glow   = score >= 80 ? 'rgba(52,211,153,0.3)' : score >= 60 ? 'rgba(251,191,36,0.3)' : 'rgba(251,113,133,0.3)';
+  const size  = 160, stroke = 14;
+  const r     = (size - stroke) / 2;
+  const circ  = 2 * Math.PI * r;
+  const safeScore = isFinite(score) ? Math.max(0, Math.min(100, score)) : 50;
+  const offset = circ - (mounted ? safeScore / 100 : 0) * circ;
+  const color  = safeScore >= 80 ? '#34d399' : safeScore >= 60 ? '#fbbf24' : '#fb7185';
+  const glow   = safeScore >= 80 ? 'rgba(52,211,153,0.3)' : safeScore >= 60 ? 'rgba(251,191,36,0.3)' : 'rgba(251,113,133,0.3)';
   return (
     <div className="relative flex items-center justify-center">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
@@ -43,7 +44,7 @@ const ScoreRing = ({ score, label, mounted }) => {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-4xl font-bold font-mono leading-none" style={{ color, textShadow: `0 0 20px ${glow}` }}>
-          {score}
+          {safeScore}
         </span>
         <span className="text-xs text-secondary font-mono uppercase tracking-widest mt-1">{label}</span>
       </div>
@@ -136,9 +137,18 @@ export default function AIInsights() {
     setError('');
     try {
       const { data: result } = await api.post('/ai/insights');
-      setData(result);
+      console.log('[AI Insights] Raw response:', result);
+      // Normalize to guarantee shape so React can never crash
+      const safe = {
+        score:           typeof result?.score === 'number' ? result.score : Number(result?.score) || 50,
+        scoreLabel:      result?.scoreLabel   || 'Fair',
+        insights:        Array.isArray(result?.insights)        ? result.insights        : [],
+        recommendations: Array.isArray(result?.recommendations) ? result.recommendations : [],
+      };
+      setData(safe);
       setLastRun(new Date());
     } catch (err) {
+      console.error('[AI Insights] Error:', err);
       setError(err.response?.data?.message || 'AI analysis failed. Please try again.');
     } finally {
       setLoading(false);

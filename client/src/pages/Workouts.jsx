@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { defaultData } from '../utils/defaultData';
-import { Dumbbell, Flame, Timer, Activity, Plus, Trophy, Zap, TrendingUp, Target, Calendar, Trash2 } from 'lucide-react';
+import { Dumbbell, Flame, Timer, Activity, Plus, Trophy, Zap, TrendingUp, Target, Calendar, Trash2, Waves, Mountain, Wind, Sword, Gamepad2, MoreHorizontal } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useTilt } from '../hooks/useTilt';
 import GlassModal from '../components/GlassModal';
@@ -70,12 +70,18 @@ const Ring = ({ pct, size = 140, stroke = 12, color1 = '#8b5cf6', color2 = '#636
 
 /* ─── Type Config ─────────────────────────────────────────── */
 const typeConfig = {
-  Running:  { color: '#22d3ee', bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    text: 'text-cyan-300',    icon: Activity },
-  Gym:      { color: '#8b5cf6', bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-300',  icon: Dumbbell },
-  Yoga:     { color: '#34d399', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-300', icon: Target   },
-  Cycling:  { color: '#fbbf24', bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   text: 'text-amber-300',   icon: Zap      },
+  Running:  { color: '#22d3ee', bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    text: 'text-cyan-300',    icon: Activity  },
+  Gym:      { color: '#8b5cf6', bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-300',  icon: Dumbbell  },
+  Yoga:     { color: '#34d399', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-300', icon: Wind      },
+  Cycling:  { color: '#fbbf24', bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   text: 'text-amber-300',   icon: Zap       },
+  Swimming: { color: '#38bdf8', bg: 'bg-sky-500/10',     border: 'border-sky-500/20',     text: 'text-sky-300',     icon: Waves     },
+  Hiking:   { color: '#86efac', bg: 'bg-green-500/10',   border: 'border-green-500/20',   text: 'text-green-300',   icon: Mountain  },
+  Pilates:  { color: '#f9a8d4', bg: 'bg-pink-500/10',    border: 'border-pink-500/20',    text: 'text-pink-300',    icon: Target    },
+  Boxing:   { color: '#fb923c', bg: 'bg-orange-500/10',  border: 'border-orange-500/20',  text: 'text-orange-300',  icon: Sword     },
+  Sports:   { color: '#a3e635', bg: 'bg-lime-500/10',    border: 'border-lime-500/20',    text: 'text-lime-300',    icon: Gamepad2  },
+  Other:    { color: '#94a3b8', bg: 'bg-slate-500/10',   border: 'border-slate-500/20',   text: 'text-slate-300',   icon: MoreHorizontal },
 };
-const getConfig = (type) => typeConfig[type] || typeConfig['Gym'];
+const getConfig = (type) => typeConfig[type] || typeConfig['Other'];
 
 /* ─── Main Page ───────────────────────────────────────────── */
 export default function Workouts() {
@@ -116,12 +122,19 @@ export default function Workouts() {
   }, {});
 
   /* ── Activity Grid ───────────────────────────────────────── */
+  // Normalize all workout dates to YYYY-MM-DD (handles ISO timestamps from MongoDB)
+  const normalizeDate = (dateVal) => {
+    if (!dateVal) return '';
+    const s = typeof dateVal === 'string' ? dateVal : new Date(dateVal).toISOString();
+    return s.split('T')[0];
+  };
   const today = new Date();
   const activityData = Array.from({ length: 30 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (29 - i));
-    const dateStr = d.toISOString().split('T')[0];
-    const dayWorkouts = workouts.filter(w => w.date === dateStr);
+    // Build local date string to avoid UTC-shift issues
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const dayWorkouts = workouts.filter(w => normalizeDate(w.date) === dateStr);
     const active = dayWorkouts.length > 0;
     const maxIntensity = active ? Math.max(...dayWorkouts.map(w => w.intensity)) : 0;
     return { date: dateStr, active, intensity: maxIntensity, count: dayWorkouts.length };
